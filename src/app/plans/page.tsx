@@ -1,101 +1,76 @@
-"use client";
+import { db } from "@/db";
+import { plans as plansTable } from "@/db/schema";
+import Link from "next/link";
 
-import { useState } from "react";
+const accessLevelOrder: Record<typeof plansTable.$inferSelect.accessLevel, number> = {
+	FREE: 0,
+	BASIC: 1,
+	PREMIUM: 2,
+};
 
-const plans = [
-	{ id: "plan-free", name: "Free", price: "$0", detail: "Catalog preview" },
-	{ id: "plan-basic", name: "Basic", price: "$9.99", detail: "Standard catalog access" },
-	{ id: "plan-premium", name: "Premium", price: "$14.99", detail: "Premium titles and features" },
-];
+function formatPlanName(name: string) {
+	return name.charAt(0) + name.slice(1).toLowerCase();
+}
 
-export default function PlansPage() {
-	const [userId, setUserId] = useState("");
-	const [pendingPlanId, setPendingPlanId] = useState<string | null>(null);
-	const [feedback, setFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+function formatPrice(monthlyPrice: number) {
+	return monthlyPrice === 0 ? "$0" : `$${monthlyPrice.toFixed(2)}`;
+}
 
-	async function subscribe(planId: string, planName: string) {
-		if (!userId.trim()) {
-			setFeedback({ kind: "error", message: "Enter your existing user ID to continue." });
-			return;
-		}
-
-		setPendingPlanId(planId);
-		setFeedback(null);
-
-		try {
-			const response = await fetch("/api/subscription", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ userId: userId.trim(), planId }),
-			});
-			const result = (await response.json()) as { error?: string };
-
-			if (!response.ok) {
-				throw new Error(result.error ?? "Unable to start subscription.");
-			}
-
-			setFeedback({ kind: "success", message: `${planName} subscription is now active.` });
-		} catch (error) {
-			setFeedback({
-				kind: "error",
-				message: error instanceof Error ? error.message : "Unable to reach the server.",
-			});
-		} finally {
-			setPendingPlanId(null);
-		}
-	}
+export default async function PlansPage() {
+	const plans = await db.select().from(plansTable);
+	plans.sort((first, second) => accessLevelOrder[first.accessLevel] - accessLevelOrder[second.accessLevel]);
 
 	return (
 		<main className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
 			<p className="text-sm font-semibold text-violet-700">SUBSCRIPTIONS</p>
-			<h1 className="mt-2 text-3xl font-bold">Choose your plan</h1>
+			<h1 className="mt-2 text-3xl font-bold">Our plans</h1>
 			<p className="mt-2 max-w-2xl text-slate-600">
-				Select a plan for your account. Plan availability and pricing are verified by the server.
+				Compare monthly pricing and content access for each plan.
 			</p>
 
-			<div className="mt-8 max-w-md">
-				<label className="block text-sm font-medium text-slate-800" htmlFor="user-id">
-					User ID
-				</label>
-				<input
-					className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none focus:border-violet-700 focus:ring-2 focus:ring-violet-700/20"
-					id="user-id"
-					autoComplete="off"
-					value={userId}
-					onChange={(event) => setUserId(event.target.value)}
-					placeholder="Enter an existing account ID"
-				/>
-			</div>
-
-			<div className="mt-8 grid gap-5 md:grid-cols-3">
-				{plans.map((plan) => (
-					<article className="rounded-xl border border-slate-200 bg-white p-6" key={plan.id}>
-						<h2 className="text-xl font-semibold">{plan.name}</h2>
-						<p className="mt-3 text-3xl font-bold">
-							{plan.price}
-							<span className="text-sm font-normal text-slate-500">/month</span>
-						</p>
-						<p className="mt-4 text-slate-600">{plan.detail}</p>
-						<button
-							className="mt-6 rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60"
-							type="button"
-							disabled={pendingPlanId !== null}
-							onClick={() => void subscribe(plan.id, plan.name)}
+			{plans.length > 0 ? (
+				<div className="mt-8 grid gap-5 md:grid-cols-3">
+					{plans.map((plan) => (
+						<article
+							className={`rounded-xl bg-white p-6 transition duration-200 hover:-translate-y-1 hover:shadow-lg ${
+								plan.accessLevel === "PREMIUM"
+									? "border-2 border-amber-400 shadow-md hover:border-amber-500"
+									: "border border-slate-200 hover:border-violet-300"
+							}`}
+							key={plan.id}
 						>
-							{pendingPlanId === plan.id ? "Processing..." : `Choose ${plan.name}`}
-						</button>
-					</article>
-				))}
-			</div>
-
-			{feedback && (
-				<p
-					className={`mt-6 text-sm ${feedback.kind === "success" ? "text-green-700" : "text-red-700"}`}
-					role="status"
-					aria-live="polite"
-				>
-					{feedback.message}
-				</p>
+							<div className="flex items-center gap-2">
+								{plan.accessLevel === "PREMIUM" && (
+									<svg
+										aria-hidden="true"
+										className="h-6 w-6 text-amber-500"
+										fill="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path d="m3 19 1.5-9 5.25 4.5L12 6l2.25 8.5L19.5 10 21 19H3Zm1.5 2h15v-1.5h-15V21Z" />
+									</svg>
+								)}
+								<h2 className="text-xl font-semibold">{formatPlanName(plan.name)}</h2>
+							</div>
+							<p className="mt-3 text-3xl font-bold">
+								{formatPrice(plan.monthlyPrice)}
+								<span className="text-sm font-normal text-slate-500">/month</span>
+							</p>
+							<p className="mt-4 font-medium text-slate-800">
+								{formatPlanName(plan.accessLevel)} content access
+							</p>
+							<p className="mt-2 text-slate-600">{plan.description}</p>
+							<Link
+								className="mt-6 inline-flex rounded-lg bg-violet-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-800 active:scale-95"
+								href={`/billing/${plan.id}`}
+							>
+								Select plan
+							</Link>
+						</article>
+					))}
+				</div>
+			) : (
+				<p className="mt-8 text-slate-600">No plans are available yet.</p>
 			)}
 		</main>
 	);
