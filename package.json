@@ -10,7 +10,8 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "db:promote-admin": "tsx scripts/promote-admin.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
