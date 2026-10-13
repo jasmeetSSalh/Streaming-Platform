@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { hashPassword, validateRegistration, verifyPassword } from "../src/lib/password";
-import { canAccessAdmin } from "../src/lib/auth-policy";
+import { apiAccessStatus, canAccessAdmin } from "../src/lib/auth-policy";
 
 test("registration normalizes email and accepts a strong password", () => {
   assert.deepEqual(validateRegistration("  PERSON@Example.com ", "StrongPassword1!"), {
@@ -25,4 +25,12 @@ test("password hashing verifies the original and rejects a different password", 
 test("admin role policy grants admin access only to admins", () => {
   assert.equal(canAccessAdmin("ADMIN"), true);
   assert.equal(canAccessAdmin("USER"), false);
+});
+
+test("API access policy returns 401 when signed out and 403 for insufficient role", () => {
+  assert.equal(apiAccessStatus(null, "USER"), 401);
+  assert.equal(apiAccessStatus(null, "ADMIN"), 401);
+  assert.equal(apiAccessStatus({ role: "USER" }, "USER"), 200);
+  assert.equal(apiAccessStatus({ role: "USER" }, "ADMIN"), 403);
+  assert.equal(apiAccessStatus({ role: "ADMIN" }, "ADMIN"), 200);
 });
