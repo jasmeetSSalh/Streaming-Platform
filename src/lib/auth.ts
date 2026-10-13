@@ -2,7 +2,7 @@ import "server-only";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { forbidden, redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { sessions, users } from "@/db/schema";
 import { canAccessAdmin } from "@/lib/auth-policy";
@@ -40,6 +40,13 @@ export async function destroySession() {
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (token) await db.delete(sessions).where(eq(sessions.tokenHash, hashToken(token)));
   cookieStore.delete(COOKIE_NAME);
+}
+
+/** Signs out every other device, e.g. after a password change. */
+export async function destroyOtherSessions(userId: string) {
+  const token = (await cookies()).get(COOKIE_NAME)?.value;
+  const others = token ? and(eq(sessions.userId, userId), ne(sessions.tokenHash, hashToken(token))) : eq(sessions.userId, userId);
+  await db.delete(sessions).where(others);
 }
 
 export async function requireUser() {
