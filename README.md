@@ -25,6 +25,7 @@ Run `npm run lint` before opening a pull request and `npm run build` before merg
 - `src/db/index.ts`: server-only database connection
 - `drizzle/`: generated migrations, committed to Git
 - `scripts/seed.ts`: development seed data
+- `docs/`: per-sprint implementation and verification notes
 
 Suggested ownership from the backlog:
 
