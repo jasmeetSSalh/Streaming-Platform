@@ -2,27 +2,27 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { plans, subscriptions, users } from "@/db/schema";
+import { authorizeApi } from "@/lib/auth";
+import { canAccessAdmin } from "@/lib/auth-policy";
 
 export async function POST(request: Request) {
+	const auth = await authorizeApi("USER");
+	if (auth.response) return auth.response;
+
 	const body = (await request.json().catch(() => null)) as {
 		userId?: unknown;
 		planId?: unknown;
 	} | null;
 
-	if (
-		!body ||
-		typeof body.userId !== "string" ||
-		typeof body.planId !== "string" ||
-		!body.userId.trim() ||
-		!body.planId.trim()
-	) {
-		return NextResponse.json(
-			{ error: "userId and planId are required." },
-			{ status: 400 },
-		);
+	if (!body || typeof body.planId !== "string" || !body.planId.trim()) {
+		return NextResponse.json({ error: "planId is required." }, { status: 400 });
 	}
 
-	const userId = body.userId.trim();
+	// Subscribe the signed-in user. Only admins may act on another account.
+	const userId = typeof body.userId === "string" && body.userId.trim() ? body.userId.trim() : auth.user.id;
+	if (userId !== auth.user.id && !canAccessAdmin(auth.user.role)) {
+		return NextResponse.json({ error: "You do not have permission to do that." }, { status: 403 });
+	}
 	const planId = body.planId.trim();
 
 	try {

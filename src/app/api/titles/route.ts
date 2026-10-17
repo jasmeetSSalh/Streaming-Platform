@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { titles } from "@/db/schema";
+import { authorizeApi } from "@/lib/auth";
 import { parseTitleInput, toPublicTitle } from "@/lib/titles";
 
 export async function GET() {
@@ -15,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+	const auth = await authorizeApi("ADMIN");
+	if (auth.response) return auth.response;
+
 	const parsed = parseTitleInput(await request.json().catch(() => null));
 	if ("error" in parsed) {
 		return NextResponse.json({ error: parsed.error }, { status: 400 });

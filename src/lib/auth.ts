@@ -2,10 +2,11 @@ import "server-only";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { forbidden, redirect } from "next/navigation";
+import { NextResponse } from "next/server";
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { sessions, users } from "@/db/schema";
-import { canAccessAdmin } from "@/lib/auth-policy";
+import { apiAccessStatus, canAccessAdmin, type Role } from "@/lib/auth-policy";
 
 const COOKIE_NAME = "streamly_session";
 const SESSION_DAYS = 7;
@@ -59,4 +60,16 @@ export async function requireAdmin() {
   const user = await requireUser();
   if (!canAccessAdmin(user.role)) forbidden();
   return user;
+}
+
+/**
+ * Route-handler guard. Pages redirect, but APIs must answer with a status:
+ * `const auth = await authorizeApi("ADMIN"); if (auth.response) return auth.response;`
+ */
+export async function authorizeApi(required: Role) {
+  const user = await getCurrentUser();
+  const status = apiAccessStatus(user, required);
+  if (status === 401) return { user: null, response: NextResponse.json({ error: "Sign in required." }, { status }) } as const;
+  if (status === 403) return { user: null, response: NextResponse.json({ error: "You do not have permission to do that." }, { status }) } as const;
+  return { user: user!, response: null } as const;
 }

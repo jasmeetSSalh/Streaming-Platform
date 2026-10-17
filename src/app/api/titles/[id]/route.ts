@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { reviews, titles, watchlistItems } from "@/db/schema";
+import { authorizeApi } from "@/lib/auth";
 import { parseTitleInput, toPublicTitle } from "@/lib/titles";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -28,6 +29,9 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+	const auth = await authorizeApi("ADMIN");
+	if (auth.response) return auth.response;
+
 	const { id } = await context.params;
 	const parsed = parseTitleInput(await request.json().catch(() => null));
 	if ("error" in parsed) {
@@ -52,6 +56,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
+	const auth = await authorizeApi("ADMIN");
+	if (auth.response) return auth.response;
+
 	const { id } = await context.params;
 
 	try {
