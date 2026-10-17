@@ -15,6 +15,20 @@
       "when": 1790572317885,
       "tag": "0001_luxuriant_rachel_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792261383476,
+      "tag": "0002_curly_shiver_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792266710620,
+      "tag": "0003_daily_mockingbird",
+      "breakpoints": true
     }
   ]
 }
