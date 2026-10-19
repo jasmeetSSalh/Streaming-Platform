@@ -18,6 +18,18 @@ A course project for a movie/show subscription service. The foundation maps dire
 
 Run `npm run lint` before opening a pull request and `npm run build` before merging a significant change.
 
+## Stripe test checkout
+
+Paid plans use Stripe Checkout subscriptions in test mode. Set `STRIPE_SECRET_KEY` in `.env.local` to a Stripe test-mode secret key and set `APP_URL` to the local app URL. Never commit Stripe keys.
+
+Install the Stripe CLI, authenticate it with your Stripe account, and forward webhook events to the app:
+
+```sh
+stripe listen --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted --forward-to localhost:3000/api/stripe/webhook
+```
+
+Copy the `whsec_...` signing secret printed by the CLI into `STRIPE_WEBHOOK_SECRET` in `.env.local`, then restart the app. Apply database migrations with `npm run db:migrate`. Use Stripe's test card `4242 4242 4242 4242` with a future expiration date and any valid CVC/postal code. Checkout completion alone does not activate a paid plan; the verified webhook records the subscription. Users can schedule paid-plan cancellation at the end of the current billing period from their account dashboard; Stripe webhooks keep the local subscription status in sync.
+
 ## Project layout
 
 - `src/app/`: routes and API handlers
@@ -31,7 +43,7 @@ Suggested ownership from the backlog:
 
 - Auth: registration, login, sessions, role checks, profile, dashboard
 - Catalog/Admin: title CRUD, search/filter, details, reviews, analytics
-- Subscriptions: plans, mock checkout, subscription history, watchlist, content gating
+- Subscriptions: plans, Stripe test-mode checkout and webhooks, subscription history, watchlist, content gating
 
 ## Deployment note
 
@@ -39,6 +51,6 @@ The checked-in configuration uses a local SQLite file for convenient development
 
 ## Recommended next steps
 
-1. Pick an authentication library and implement server-side authorization before exposing dashboard or admin routes.
+1. Add a self-service billing portal for updating payment methods and reviewing invoices.
 2. Agree on the title metadata fields and migrations before members build forms independently.
-3. Add Playwright end-to-end coverage for the Sprint 2 user journey: register, choose plan, browse, save a title.
+3. Add Playwright end-to-end coverage for registration, Stripe test checkout and webhook confirmation, browsing, and saving a title.
