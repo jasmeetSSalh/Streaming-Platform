@@ -10,6 +10,7 @@ const emptyForm = {
 	type: "MOVIE" as TitleType,
 	genre: "",
 	synopsis: "",
+	cast: "",
 	posterUrl: "",
 	releaseYear: String(new Date().getFullYear()),
 };
@@ -32,6 +33,7 @@ export function AdminCatalog({ initialTitles }: { initialTitles: PublicTitle[] }
 			type: title.type,
 			genre: title.genre,
 			synopsis: title.synopsis,
+			cast: title.cast,
 			posterUrl: title.posterUrl ?? "",
 			releaseYear: String(title.releaseYear),
 		});
@@ -55,6 +57,7 @@ export function AdminCatalog({ initialTitles }: { initialTitles: PublicTitle[] }
 				type: form.type,
 				genre: form.genre,
 				description: form.synopsis,
+				cast: form.cast,
 				posterUrl: form.posterUrl,
 				releaseYear: Number(form.releaseYear),
 			};
@@ -177,6 +180,17 @@ export function AdminCatalog({ initialTitles }: { initialTitles: PublicTitle[] }
 						max={new Date().getFullYear() + 5}
 						value={form.releaseYear}
 						onChange={(event) => setForm((current) => ({ ...current, releaseYear: event.target.value }))}
+					/>
+				</label>
+
+				<label className="md:col-span-2 block text-sm font-medium text-slate-800" htmlFor="title-cast">
+					Cast
+					<input
+						className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-violet-700 focus:ring-2 focus:ring-violet-700/20"
+						id="title-cast"
+						placeholder="Comma-separated names"
+						value={form.cast}
+						onChange={(event) => setForm((current) => ({ ...current, cast: event.target.value }))}
 					/>
 				</label>
 

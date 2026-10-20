@@ -127,3 +127,24 @@ export function toPublicTitle(row: TitleRow): PublicTitle {
 		createdAt: row.createdAt.toISOString(),
 	};
 }
+
+export function parseCastList(cast: string) {
+	return cast
+		.split(/[,;]/)
+		.map((name) => name.trim())
+		.filter(Boolean);
+}
+
+export function uniqueGenres(rows: { genre: string }[]) {
+	return [...new Set(rows.map((row) => row.genre).filter(Boolean))].sort((left, right) =>
+		left.localeCompare(right),
+	);
+}
+
+export function matchesCatalogQuery(title: { name: string; genre: string }, query: string, genre: string) {
+	const haystack = title.name.toLowerCase();
+	const needle = query.trim().toLowerCase();
+	const matchesName = needle.length === 0 || haystack.includes(needle);
+	const matchesGenre = genre.length === 0 || title.genre === genre;
+	return matchesName && matchesGenre;
+}

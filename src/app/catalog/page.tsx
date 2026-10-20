@@ -1,19 +1,21 @@
 import { desc } from "drizzle-orm";
+import { CatalogBrowser } from "@/components/catalog-browser";
 import { db } from "@/db";
 import { titles } from "@/db/schema";
-import { TitlePoster } from "@/components/title-poster";
+import { toPublicTitle } from "@/lib/titles";
 
 export const dynamic = "force-dynamic";
 
 export default async function CatalogPage() {
-	const catalog = await db.select().from(titles).orderBy(desc(titles.createdAt));
+	const rows = await db.select().from(titles).orderBy(desc(titles.createdAt));
+	const catalog = rows.map(toPublicTitle);
 
 	return (
 		<main className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
 			<p className="text-sm font-semibold text-violet-700">CATALOG</p>
 			<h1 className="mt-2 text-3xl font-bold">Discover something to watch</h1>
 			<p className="mt-2 max-w-2xl text-slate-600">
-				Browse every movie and show currently in the catalog.
+				Search by name or filter by genre, then open a title for synopsis, cast, and rating.
 			</p>
 
 			{catalog.length === 0 ? (
@@ -21,17 +23,7 @@ export default async function CatalogPage() {
 					No titles yet. An admin can add movies and shows from the catalog management page.
 				</p>
 			) : (
-				<div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-					{catalog.map((title) => (
-						<article className="overflow-hidden rounded-xl border border-slate-200 bg-white" key={title.id}>
-							<TitlePoster name={title.name} posterUrl={title.posterUrl} />
-							<div className="p-5">
-								<h2 className="text-lg font-semibold text-slate-950">{title.name}</h2>
-								<p className="mt-1 text-sm text-slate-600">{title.genre}</p>
-							</div>
-						</article>
-					))}
-				</div>
+				<CatalogBrowser titles={catalog} />
 			)}
 		</main>
 	);
