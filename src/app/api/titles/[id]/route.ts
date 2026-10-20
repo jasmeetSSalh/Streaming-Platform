@@ -43,6 +43,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 		const [row] = await db.update(titles).set(parsed.data).where(eq(titles.id, id)).returning();
 
 		revalidatePath("/catalog");
+		revalidatePath(`/catalog/${id}`);
 		revalidatePath("/admin");
 
 		return NextResponse.json({ title: toPublicTitle(row) });
@@ -65,6 +66,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 		await db.delete(titles).where(eq(titles.id, id));
 
 		revalidatePath("/catalog");
+		revalidatePath(`/catalog/${id}`);
 		revalidatePath("/admin");
 
 		return NextResponse.json({ ok: true });

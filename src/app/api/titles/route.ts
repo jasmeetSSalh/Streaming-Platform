@@ -33,6 +33,7 @@ export async function POST(request: Request) {
 			.returning();
 
 		revalidatePath("/catalog");
+		revalidatePath(`/catalog/${id}`);
 		revalidatePath("/admin");
 
 		return NextResponse.json({ title: toPublicTitle(row) }, { status: 201 });
