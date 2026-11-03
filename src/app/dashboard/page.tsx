@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
+import { TitlePoster } from "@/components/title-poster";
 import { db } from "@/db";
-import { plans, subscriptions } from "@/db/schema";
+import { plans, subscriptions, titles, watchlistItems } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
+import { describeRenewal, WATCHLIST_PREVIEW_LIMIT } from "@/lib/dashboard";
 import { CancelSubscriptionButton } from "./cancel-subscription-button";
 import { KeepSubscriptionButton } from "./keep-subscription-button";
 
@@ -12,6 +14,10 @@ function formatPlanName(name: string) {
 
 function formatPrice(monthlyPrice: number) {
 	return monthlyPrice === 0 ? "$0.00" : `$${monthlyPrice.toFixed(2)}`;
+}
+
+function formatDate(date: Date) {
+	return date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
 export default async function DashboardPage() {
@@ -30,6 +36,18 @@ export default async function DashboardPage() {
 		.where(and(eq(subscriptions.userId, user.id), eq(subscriptions.status, "ACTIVE")))
 		.orderBy(desc(subscriptions.startedAt))
 		.limit(1);
+	const watchlistPreview = await db
+		.select({ id: titles.id, name: titles.name, genre: titles.genre, posterUrl: titles.posterUrl })
+		.from(watchlistItems)
+		.innerJoin(titles, eq(watchlistItems.titleId, titles.id))
+		.where(eq(watchlistItems.userId, user.id))
+		.orderBy(desc(watchlistItems.createdAt))
+		.limit(WATCHLIST_PREVIEW_LIMIT);
+	const [{ watchlistCount }] = await db
+		.select({ watchlistCount: count() })
+		.from(watchlistItems)
+		.where(eq(watchlistItems.userId, user.id));
+	const renewal = describeRenewal(activeSubscription);
 
 	return (
 		<main className="min-h-[calc(100vh-65px)] bg-slate-50">
@@ -97,7 +115,7 @@ export default async function DashboardPage() {
 										<span className="text-sm font-normal text-slate-500"> / month</span>
 									</p>
 								</div>
-								<div className="mt-7 flex items-center gap-3 border-t border-slate-100 pt-5 text-sm text-slate-600">
+								<div className="mt-7 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5 text-sm text-slate-600">
 									<svg aria-hidden="true" className="h-5 w-5 shrink-0 text-violet-700" fill="none" viewBox="0 0 24 24">
 										<rect height="17" rx="2" stroke="currentColor" strokeWidth="1.7" width="18" x="3" y="4" />
 										<path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
@@ -105,12 +123,20 @@ export default async function DashboardPage() {
 									<span>
 										Member since{" "}
 										<time className="font-medium text-slate-800" dateTime={activeSubscription.startedAt.toISOString()}>
-											{activeSubscription.startedAt.toLocaleDateString(undefined, {
-												year: "numeric",
-												month: "long",
-												day: "numeric",
-											})}
+											{formatDate(activeSubscription.startedAt)}
 										</time>
+									</span>
+									<span aria-hidden="true" className="text-slate-300">·</span>
+									<span>
+										{renewal.label}
+										{renewal.date && (
+											<>
+												{" "}
+												<time className="font-medium text-slate-800" dateTime={renewal.date.toISOString()}>
+													{formatDate(renewal.date)}
+												</time>
+											</>
+										)}
 									</span>
 								</div>
 								{activeSubscription.cancelAtPeriodEnd ? (
@@ -177,6 +203,53 @@ export default async function DashboardPage() {
 						</Link>
 					</aside>
 				</div>
+
+				<section
+					aria-labelledby="watchlist-title"
+					className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+				>
+					<div className="flex flex-wrap items-center justify-between gap-4">
+						<div>
+							<p className="text-xs font-bold tracking-[0.14em] text-violet-700 uppercase">
+								Watchlist
+							</p>
+							<h2 className="mt-1 text-xl font-semibold text-slate-950" id="watchlist-title">
+								Saved to watch later
+								<span className="ml-2 text-sm font-normal text-slate-500">({watchlistCount})</span>
+							</h2>
+						</div>
+						<Link
+							className="text-sm font-semibold text-violet-700 hover:text-violet-900 hover:underline"
+							href="/watchlist"
+						>
+							View full watchlist
+							<span aria-hidden="true" className="ml-1">→</span>
+						</Link>
+					</div>
+					{watchlistPreview.length > 0 ? (
+						<ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+							{watchlistPreview.map((title) => (
+								<li key={title.id}>
+									<Link className="group block" href={`/catalog/${title.id}`}>
+										<TitlePoster className="rounded-lg" name={title.name} posterUrl={title.posterUrl} />
+										<p className="mt-2 truncate text-sm font-semibold text-slate-900 group-hover:text-violet-700">
+											{title.name}
+										</p>
+										<p className="text-xs text-slate-500">{title.genre}</p>
+									</Link>
+								</li>
+							))}
+						</ul>
+					) : (
+						<p className="mt-4 text-sm text-slate-600">
+							Nothing saved yet.{" "}
+							<Link className="font-semibold text-violet-700 hover:underline" href="/catalog">
+								Browse the catalog
+							</Link>{" "}
+							to find something to watch.
+						</p>
+					)}
+				</section>
 			</div>
 		</main>
 	);
