@@ -60,3 +60,11 @@ export async function requireAdmin() {
   if (!canAccessAdmin(user.role)) forbidden();
   return user;
 }
+
+/** For API routes: returns an error response when the caller is not an admin, otherwise null. */
+export async function adminApiGuard() {
+  const user = await getCurrentUser();
+  if (!user) return Response.json({ error: "Sign in as an admin to manage the catalog." }, { status: 401 });
+  if (!canAccessAdmin(user.role)) return Response.json({ error: "Admin access required." }, { status: 403 });
+  return null;
+}

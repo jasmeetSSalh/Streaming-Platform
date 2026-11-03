@@ -1,14 +1,11 @@
-import { avg, count, desc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { avg, count, eq } from "drizzle-orm";
+import { avg, count, desc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ReviewForm } from "@/components/review-form";
 import { TitlePoster } from "@/components/title-poster";
 import { db } from "@/db";
-import { reviews, titles, users } from "@/db/schema";
-import { getCurrentUser } from "@/lib/auth";
-import { reviews, titleViews, titles } from "@/db/schema";
+import { reviews, titleViews, titles, users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserAccessLevel, hasPlanAccess } from "@/lib/subscription-access";
 import { parseCastList } from "@/lib/titles";
@@ -27,15 +24,16 @@ export default async function TitleDetailPage({ params }: TitleDetailPageProps) 
 		notFound();
 	}
 
-	await db
-		.update(titles)
-		.set({ viewCount: sql`${titles.viewCount} + 1` })
-		.where(eq(titles.id, id));
-
-	const user = await getCurrentUser();
 	const user = await getCurrentUser();
 	const accessLevel = await getUserAccessLevel(user?.id);
 	const canViewTitle = hasPlanAccess(accessLevel, title.requiredPlan);
+
+	if (canViewTitle) {
+		await db
+			.update(titles)
+			.set({ viewCount: sql`${titles.viewCount} + 1` })
+			.where(eq(titles.id, id));
+	}
 	if (user && canViewTitle) {
 		await db
 			.insert(titleViews)

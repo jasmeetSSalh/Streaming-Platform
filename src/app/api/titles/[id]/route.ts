@@ -2,8 +2,8 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { reviews, titles, watchlistItems } from "@/db/schema";
-import { getCurrentUser } from "@/lib/auth";
+import { reviews, titleViews, titles, watchlistItems } from "@/db/schema";
+import { adminApiGuard, getCurrentUser } from "@/lib/auth";
 import { parseTitleInput, toPublicTitle } from "@/lib/titles";
 import { getUserAccessLevel, hasPlanAccess } from "@/lib/subscription-access";
 
@@ -35,6 +35,9 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+	const denied = await adminApiGuard();
+	if (denied) return denied;
+
 	const { id } = await context.params;
 	const parsed = parseTitleInput(await request.json().catch(() => null));
 	if ("error" in parsed) {
@@ -60,6 +63,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
+	const denied = await adminApiGuard();
+	if (denied) return denied;
+
 	const { id } = await context.params;
 
 	try {
@@ -70,6 +76,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
 		await db.delete(watchlistItems).where(eq(watchlistItems.titleId, id));
 		await db.delete(reviews).where(eq(reviews.titleId, id));
+		await db.delete(titleViews).where(eq(titleViews.titleId, id));
 		await db.delete(titles).where(eq(titles.id, id));
 
 		revalidatePath("/catalog");
