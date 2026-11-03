@@ -129,9 +129,14 @@ export function AdminCatalog({ initialTitles }: { initialTitles: PublicTitle[] }
 			<p className="mt-2 max-w-2xl text-slate-600">
 				Add a movie or show, correct existing details, or remove a title from the catalog.
 			</p>
-			<Link className="mt-3 inline-flex text-sm font-semibold text-violet-700 hover:underline" href="/admin/users">
-				Manage registered users<span aria-hidden="true" className="ml-1">→</span>
-			</Link>
+			<div className="mt-3 flex flex-wrap gap-4">
+				<Link className="inline-flex text-sm font-semibold text-violet-700 hover:underline" href="/admin/users">
+					Manage registered users<span aria-hidden="true" className="ml-1">→</span>
+				</Link>
+				<Link className="inline-flex text-sm font-semibold text-violet-700 hover:underline" href="/admin/analytics">
+					View catalog analytics<span aria-hidden="true" className="ml-1">→</span>
+				</Link>
+			</div>
 
 			<form className="mt-8 grid gap-4 rounded-xl border border-slate-200 bg-white p-6 md:grid-cols-2" onSubmit={onSubmit}>
 				<h2 className="md:col-span-2 text-xl font-semibold text-slate-950">

@@ -33,9 +33,14 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
 
 	return (
 		<main className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
-			<Link className="text-sm font-semibold text-violet-700 hover:underline" href="/admin">
-				<span aria-hidden="true">← </span>Catalog management
-			</Link>
+			<div className="flex flex-wrap gap-4">
+				<Link className="text-sm font-semibold text-violet-700 hover:underline" href="/admin">
+					<span aria-hidden="true">← </span>Catalog management
+				</Link>
+				<Link className="text-sm font-semibold text-violet-700 hover:underline" href="/admin/analytics">
+					Catalog analytics
+				</Link>
+			</div>
 			<p className="mt-6 text-sm font-semibold text-violet-700">ADMIN</p>
 			<h1 className="mt-2 text-3xl font-bold">Registered users</h1>
 			<p className="mt-2 text-slate-600">{rows.length} accounts</p>

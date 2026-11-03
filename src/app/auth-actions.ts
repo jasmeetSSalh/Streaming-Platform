@@ -10,15 +10,17 @@ import { hashPassword, validateRegistration, verifyPassword } from "@/lib/passwo
 
 export type AuthState = { error?: string };
 
-function getBillingReturnTo(formData: FormData) {
+function getSafeReturnTo(formData: FormData) {
   const returnTo = String(formData.get("returnTo") ?? "");
-  return /^\/billing\/[^/?#]+$/.test(returnTo) ? returnTo : null;
+  if (/^\/billing\/[^/?#]+$/.test(returnTo)) return returnTo;
+  if (/^\/catalog\/[A-Za-z0-9_-]+$/.test(returnTo)) return returnTo;
+  return null;
 }
 
 export async function register(_state: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
-  const returnTo = getBillingReturnTo(formData);
+  const returnTo = getSafeReturnTo(formData);
   const validation = validateRegistration(email, password);
   if (!validation.emailIsValid) return { error: "Enter a valid email address." };
   if (!validation.passwordIsStrong) return { error: "Use 12+ characters and at least three character types." };
@@ -44,7 +46,7 @@ export async function register(_state: AuthState, formData: FormData): Promise<A
 export async function login(_state: AuthState, formData: FormData): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const returnTo = getBillingReturnTo(formData);
+  const returnTo = getSafeReturnTo(formData);
   const [user] = await db.select().from(users).where(eq(users.email, email));
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return { error: "Email or password is incorrect." };

@@ -29,6 +29,13 @@
       "when": 1792266710620,
       "tag": "0003_daily_mockingbird",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793708648476,
+      "tag": "0004_perfect_enchantress",
+      "breakpoints": true
     }
   ]
 }
