@@ -3,9 +3,17 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { TitlePoster } from "@/components/title-poster";
-import { matchesCatalogQuery, uniqueGenres, type PublicTitle } from "@/lib/titles";
+import { matchesCatalogQuery, uniqueGenres, type PlanLevel } from "@/lib/titles";
 
-export function CatalogBrowser({ titles }: { titles: PublicTitle[] }) {
+type CatalogTitle = {
+	id: string;
+	name: string;
+	genre: string;
+	posterUrl: string | null;
+	requiredPlan: PlanLevel;
+};
+
+export function CatalogBrowser({ titles }: { titles: CatalogTitle[] }) {
 	const [query, setQuery] = useState("");
 	const [genre, setGenre] = useState("");
 	const genres = useMemo(() => uniqueGenres(titles), [titles]);
@@ -66,6 +74,11 @@ export function CatalogBrowser({ titles }: { titles: PublicTitle[] }) {
 							<div className="p-5">
 								<h2 className="text-lg font-semibold text-slate-950">{title.name}</h2>
 								<p className="mt-1 text-sm text-slate-600">{title.genre}</p>
+								{title.requiredPlan !== "FREE" && (
+									<p className="mt-2 text-xs font-semibold text-violet-700">
+										{title.requiredPlan.charAt(0) + title.requiredPlan.slice(1).toLowerCase()} plan required
+									</p>
+								)}
 							</div>
 						</Link>
 					))}

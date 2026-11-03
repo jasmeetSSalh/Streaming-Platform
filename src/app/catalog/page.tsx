@@ -2,13 +2,18 @@ import { desc } from "drizzle-orm";
 import { CatalogBrowser } from "@/components/catalog-browser";
 import { db } from "@/db";
 import { titles } from "@/db/schema";
-import { toPublicTitle } from "@/lib/titles";
 
 export const dynamic = "force-dynamic";
 
 export default async function CatalogPage() {
 	const rows = await db.select().from(titles).orderBy(desc(titles.createdAt));
-	const catalog = rows.map(toPublicTitle);
+	const catalog = rows.map(({ id, name, genre, posterUrl, requiredPlan }) => ({
+		id,
+		name,
+		genre,
+		posterUrl,
+		requiredPlan,
+	}));
 
 	return (
 		<main className="mx-auto max-w-6xl px-6 py-12 sm:px-10">

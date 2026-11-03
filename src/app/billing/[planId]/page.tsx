@@ -8,6 +8,7 @@ import { getStripe } from "@/lib/stripe";
 import { syncStripeSubscription } from "@/lib/stripe-subscriptions";
 import { BillingAuthDialog } from "./billing-auth-dialog";
 import { CheckoutButton } from "./checkout-button";
+import { PlanChangeButton } from "./plan-change-button";
 import { SubscriptionPending } from "./subscription-pending";
 
 function formatPlanName(name: string) {
@@ -71,7 +72,10 @@ export default async function BillingPage({
 
 	const [activeSubscription] = user
 		? await db
-				.select({ planId: subscriptions.planId })
+				.select({
+					planId: subscriptions.planId,
+					stripeSubscriptionId: subscriptions.stripeSubscriptionId,
+				})
 				.from(subscriptions)
 				.where(
 					and(
@@ -83,9 +87,9 @@ export default async function BillingPage({
 				.limit(1)
 		: [];
 	const activePlanId = activeSubscription?.planId;
-	const [subscribedPlan] = activePlanId && activePlanId !== plan.id
+	const [subscribedPlan] = activePlanId
 		? await db
-				.select({ name: plansTable.name })
+				.select({ name: plansTable.name, monthlyPrice: plansTable.monthlyPrice })
 				.from(plansTable)
 				.where(eq(plansTable.id, activePlanId))
 				.limit(1)
@@ -126,18 +130,33 @@ export default async function BillingPage({
 			</section>
 
 			{activeSubscription ? (
-				<aside
-					className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900"
-					role="status"
-				>
-					{activePlanId === plan.id
-						? "This plan is active on your account."
-						: `You already have an active ${subscribedPlan?.name.toLowerCase() ?? ""} subscription. Manage it from your account before choosing another plan.`}
-					{" "}
-					<Link className="font-medium underline" href="/dashboard">
-						Go to your account
-					</Link>
-				</aside>
+				activePlanId === plan.id ? (
+					<aside className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-900" role="status">
+						This plan is active on your account.{" "}
+						<Link className="font-medium underline" href="/dashboard">Go to your account</Link>
+					</aside>
+				) : (
+					<>
+						<aside className="mt-6 rounded-lg border border-violet-200 bg-violet-50 p-4 text-sm text-violet-950">
+							Changing from {subscribedPlan?.name.toLowerCase()} to {formatPlanName(plan.name)} updates your access immediately.
+							{activeSubscription.stripeSubscriptionId ? (
+								<> Any price difference is prorated and invoiced immediately; your new monthly price will be {formatPrice(plan.monthlyPrice)}.</>
+							) : plan.monthlyPrice > 0 ? (
+								<> Continue to secure checkout to activate the paid plan at {formatPrice(plan.monthlyPrice)} per month.</>
+							) : (
+								<> The new plan will cost {formatPrice(plan.monthlyPrice)} per month.</>
+							)}
+						</aside>
+						{user &&
+						!activeSubscription.stripeSubscriptionId &&
+						subscribedPlan?.monthlyPrice === 0 &&
+						plan.monthlyPrice > 0 ? (
+							<CheckoutButton isFree={false} planId={plan.id} />
+						) : (
+							<PlanChangeButton planId={plan.id} planName={formatPlanName(plan.name)} />
+						)}
+					</>
+				)
 			) : checkout === "success" && user ? (
 				<SubscriptionPending />
 			) : checkout === "cancelled" ? (
