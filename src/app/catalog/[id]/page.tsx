@@ -1,14 +1,12 @@
-import { avg, count, desc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { avg, count, eq } from "drizzle-orm";
+import { and, avg, count, desc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ReviewForm } from "@/components/review-form";
 import { TitlePoster } from "@/components/title-poster";
+import { WatchlistButton } from "@/components/watchlist-button";
 import { db } from "@/db";
-import { reviews, titles, users } from "@/db/schema";
-import { getCurrentUser } from "@/lib/auth";
-import { reviews, titleViews, titles } from "@/db/schema";
+import { reviews, titleViews, titles, users, watchlistItems } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserAccessLevel, hasPlanAccess } from "@/lib/subscription-access";
 import { parseCastList } from "@/lib/titles";
@@ -27,15 +25,16 @@ export default async function TitleDetailPage({ params }: TitleDetailPageProps) 
 		notFound();
 	}
 
-	await db
-		.update(titles)
-		.set({ viewCount: sql`${titles.viewCount} + 1` })
-		.where(eq(titles.id, id));
-
-	const user = await getCurrentUser();
 	const user = await getCurrentUser();
 	const accessLevel = await getUserAccessLevel(user?.id);
 	const canViewTitle = hasPlanAccess(accessLevel, title.requiredPlan);
+
+	if (canViewTitle) {
+		await db
+			.update(titles)
+			.set({ viewCount: sql`${titles.viewCount} + 1` })
+			.where(eq(titles.id, id));
+	}
 	if (user && canViewTitle) {
 		await db
 			.insert(titleViews)
@@ -50,6 +49,14 @@ export default async function TitleDetailPage({ params }: TitleDetailPageProps) 
 				set: { viewedAt: new Date() },
 			});
 	}
+
+	const [savedItem] = user
+		? await db
+				.select({ id: watchlistItems.id })
+				.from(watchlistItems)
+				.where(and(eq(watchlistItems.userId, user.id), eq(watchlistItems.titleId, title.id)))
+				.limit(1)
+		: [];
 
 	const [stats] = await db
 		.select({
@@ -95,6 +102,7 @@ export default async function TitleDetailPage({ params }: TitleDetailPageProps) 
 					</p>
 					<h1 className="mt-2 text-3xl font-bold text-slate-950">{title.name}</h1>
 					<p className="mt-3 text-sm font-medium text-violet-700">{title.genre}</p>
+					{user && <WatchlistButton initialSaved={Boolean(savedItem)} titleId={title.id} titleName={title.name} />}
 					{canViewTitle ? (
 						<>
 							<p className="mt-4 text-lg text-slate-800">

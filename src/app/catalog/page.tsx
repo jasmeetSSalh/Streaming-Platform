@@ -1,12 +1,19 @@
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { CatalogBrowser } from "@/components/catalog-browser";
 import { db } from "@/db";
-import { titles } from "@/db/schema";
+import { titles, watchlistItems } from "@/db/schema";
+import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function CatalogPage() {
 	const rows = await db.select().from(titles).orderBy(desc(titles.createdAt));
+	const user = await getCurrentUser();
+	const savedIds = user
+		? (await db.select({ titleId: watchlistItems.titleId }).from(watchlistItems).where(eq(watchlistItems.userId, user.id))).map(
+				(row) => row.titleId,
+			)
+		: [];
 	const catalog = rows.map(({ id, name, genre, posterUrl, requiredPlan }) => ({
 		id,
 		name,
@@ -28,7 +35,7 @@ export default async function CatalogPage() {
 					No titles yet. An admin can add movies and shows from the catalog management page.
 				</p>
 			) : (
-				<CatalogBrowser titles={catalog} />
+				<CatalogBrowser isLoggedIn={Boolean(user)} savedTitleIds={savedIds} titles={catalog} />
 			)}
 		</main>
 	);
