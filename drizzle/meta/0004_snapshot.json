@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "3cac00c0-5934-4c66-adf2-ee2d4d1f80ea",
+  "id": "f2ebe3c9-43d6-4a4b-bf49-5bbf3c850f38",
   "prevId": "40dcb887-4091-4976-8533-abe310aa9ccf",
   "tables": {
     "plans": {
@@ -310,6 +310,80 @@
           "tableTo": "plans",
           "columnsFrom": [
             "plan_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "title_views": {
+      "name": "title_views",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title_id": {
+          "name": "title_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "viewed_at": {
+          "name": "viewed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "title_views_user_viewed_at_idx": {
+          "name": "title_views_user_viewed_at_idx",
+          "columns": [
+            "user_id",
+            "viewed_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "title_views_user_id_users_id_fk": {
+          "name": "title_views_user_id_users_id_fk",
+          "tableFrom": "title_views",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "title_views_title_id_titles_id_fk": {
+          "name": "title_views_title_id_titles_id_fk",
+          "tableFrom": "title_views",
+          "tableTo": "titles",
+          "columnsFrom": [
+            "title_id"
           ],
           "columnsTo": [
             "id"

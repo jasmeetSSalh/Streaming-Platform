@@ -8,7 +8,15 @@ import { parseTitleInput, toPublicTitle } from "@/lib/titles";
 export async function GET() {
 	try {
 		const rows = await db.select().from(titles).orderBy(desc(titles.createdAt));
-		return NextResponse.json({ titles: rows.map(toPublicTitle) });
+		return NextResponse.json({
+			titles: rows.map(({ id, name, genre, posterUrl, requiredPlan }) => ({
+				id,
+				name,
+				genre,
+				posterUrl,
+				requiredPlan,
+			})),
+		});
 	} catch {
 		return NextResponse.json({ error: "Unable to load catalog." }, { status: 500 });
 	}

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type Stripe from "stripe";
 import { db } from "@/db";
 import { plans, subscriptions, users } from "@/db/schema";
@@ -60,4 +60,9 @@ export async function syncStripeSubscription(subscription: Stripe.Subscription) 
         endedAt: subscription.ended_at ? new Date(subscription.ended_at * 1000) : null,
       },
     });
+
+  await db
+    .update(subscriptions)
+    .set({ status: "EXPIRED", endedAt: new Date(subscription.created * 1000) })
+    .where(and(eq(subscriptions.userId, userId), eq(subscriptions.status, "ACTIVE"), isNull(subscriptions.stripeSubscriptionId)));
 }
