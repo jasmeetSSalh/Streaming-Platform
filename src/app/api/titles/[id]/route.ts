@@ -3,7 +3,9 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { reviews, titles, watchlistItems } from "@/db/schema";
+import { getCurrentUser } from "@/lib/auth";
 import { parseTitleInput, toPublicTitle } from "@/lib/titles";
+import { getUserAccessLevel, hasPlanAccess } from "@/lib/subscription-access";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -19,6 +21,11 @@ export async function GET(_request: Request, context: RouteContext) {
 		const row = await findTitle(id);
 		if (!row) {
 			return NextResponse.json({ error: "Title not found." }, { status: 404 });
+		}
+		const user = await getCurrentUser();
+		const accessLevel = await getUserAccessLevel(user?.id);
+		if (!hasPlanAccess(accessLevel, row.requiredPlan)) {
+			return NextResponse.json({ error: "Upgrade your plan to access this title." }, { status: 403 });
 		}
 
 		return NextResponse.json({ title: toPublicTitle(row) });

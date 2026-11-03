@@ -42,13 +42,17 @@ export async function POST(request: Request) {
   }
 
   const [activeSubscription] = await db
-    .select({ id: subscriptions.id })
+    .select({ id: subscriptions.id, stripeSubscriptionId: subscriptions.stripeSubscriptionId })
     .from(subscriptions)
     .where(and(eq(subscriptions.userId, user.id), eq(subscriptions.status, "ACTIVE")))
     .limit(1);
-  if (activeSubscription) {
+  if (activeSubscription && (activeSubscription.stripeSubscriptionId || plan.monthlyPrice === 0)) {
     return NextResponse.json(
-      { error: "You already have an active subscription." },
+      {
+        error: activeSubscription.stripeSubscriptionId
+          ? "You already have an active subscription. Change plans from the billing page."
+          : "You already have an active subscription.",
+      },
       { status: 409 },
     );
   }
