@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { TitlePoster } from "@/components/title-poster";
+import { WatchlistButton } from "@/components/watchlist-button";
 import { matchesCatalogQuery, uniqueGenres, type PlanLevel } from "@/lib/titles";
 
 type CatalogTitle = {
@@ -13,7 +14,14 @@ type CatalogTitle = {
 	requiredPlan: PlanLevel;
 };
 
-export function CatalogBrowser({ titles }: { titles: CatalogTitle[] }) {
+type CatalogBrowserProps = {
+	titles: CatalogTitle[];
+	isLoggedIn: boolean;
+	savedTitleIds: string[];
+};
+
+export function CatalogBrowser({ titles, isLoggedIn, savedTitleIds }: CatalogBrowserProps) {
+	const saved = useMemo(() => new Set(savedTitleIds), [savedTitleIds]);
 	const [query, setQuery] = useState("");
 	const [genre, setGenre] = useState("");
 	const genres = useMemo(() => uniqueGenres(titles), [titles]);
@@ -65,22 +73,28 @@ export function CatalogBrowser({ titles }: { titles: CatalogTitle[] }) {
 			) : (
 				<div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 					{results.map((title) => (
-						<Link
-							className="overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
-							href={`/catalog/${title.id}`}
+						<div
+							className="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
 							key={title.id}
 						>
-							<TitlePoster name={title.name} posterUrl={title.posterUrl} />
-							<div className="p-5">
-								<h2 className="text-lg font-semibold text-slate-950">{title.name}</h2>
-								<p className="mt-1 text-sm text-slate-600">{title.genre}</p>
-								{title.requiredPlan !== "FREE" && (
-									<p className="mt-2 text-xs font-semibold text-violet-700">
-										{title.requiredPlan.charAt(0) + title.requiredPlan.slice(1).toLowerCase()} plan required
-									</p>
-								)}
-							</div>
-						</Link>
+							<Link className="block" href={`/catalog/${title.id}`}>
+								<TitlePoster name={title.name} posterUrl={title.posterUrl} />
+								<div className="p-5">
+									<h2 className="text-lg font-semibold text-slate-950">{title.name}</h2>
+									<p className="mt-1 text-sm text-slate-600">{title.genre}</p>
+									{title.requiredPlan !== "FREE" && (
+										<p className="mt-2 text-xs font-semibold text-violet-700">
+											{title.requiredPlan.charAt(0) + title.requiredPlan.slice(1).toLowerCase()} plan required
+										</p>
+									)}
+								</div>
+							</Link>
+							{isLoggedIn && (
+								<div className="mt-auto px-5 pb-5">
+									<WatchlistButton compact initialSaved={saved.has(title.id)} titleId={title.id} titleName={title.name} />
+								</div>
+							)}
+						</div>
 					))}
 				</div>
 			)}
