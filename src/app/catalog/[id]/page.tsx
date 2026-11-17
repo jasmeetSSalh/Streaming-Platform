@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { avg, count, eq } from "drizzle-orm";
+import { and, avg, count, eq } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TitlePoster } from "@/components/title-poster";
+import { WatchlistButton } from "@/components/watchlist-button";
 import { db } from "@/db";
-import { reviews, titleViews, titles } from "@/db/schema";
+import { reviews, titleViews, titles, watchlistItems } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { getUserAccessLevel, hasPlanAccess } from "@/lib/subscription-access";
 import { parseCastList } from "@/lib/titles";
@@ -48,10 +49,18 @@ export default async function TitleDetailPage({ params }: TitleDetailPageProps) 
 		})
 		.from(reviews)
 		.where(eq(reviews.titleId, id));
+	const [savedEntry] = user
+		? await db
+			.select({ id: watchlistItems.id })
+			.from(watchlistItems)
+			.where(and(eq(watchlistItems.userId, user.id), eq(watchlistItems.titleId, id)))
+			.limit(1)
+		: [];
 
 	const reviewCount = Number(stats?.total ?? 0);
 	const averageRating = stats?.average == null ? null : Number(stats.average);
 	const cast = parseCastList(title.cast);
+	const isSaved = !!user && !!savedEntry;
 
 	return (
 		<main className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
@@ -70,6 +79,11 @@ export default async function TitleDetailPage({ params }: TitleDetailPageProps) 
 					</p>
 					<h1 className="mt-2 text-3xl font-bold text-slate-950">{title.name}</h1>
 					<p className="mt-3 text-sm font-medium text-violet-700">{title.genre}</p>
+					{user && (
+						<div className="mt-4">
+							<WatchlistButton titleId={title.id} saved={isSaved} />
+						</div>
+					)}
 					{canViewTitle ? (
 						<>
 							<p className="mt-4 text-lg text-slate-800">
